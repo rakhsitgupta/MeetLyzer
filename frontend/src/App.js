@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import { updateMeetingFrequency, updateCompletionStats } from './components/AnalyticsDashboard';
 
 const emptyActionItem = { task: '', assignee: '', deadline: '', priority: '', dependencies: '' };
 
@@ -327,6 +328,11 @@ function DashboardPage() {
     setSummary(summaryObj);
     setShowModal(true);
     setLoading(false);
+    
+    // Update analytics
+    updateMeetingFrequency();
+    const stats = getCompletionStats(actionGroups);
+    updateCompletionStats(stats.completed, stats.total);
   };
 
   // Generate email templates
@@ -541,7 +547,7 @@ Best regards,
     setSummarySuggestError('');
     setSummarySuggestions('');
     try {
-      const res = await axios.post('/suggest-actions', { text: summary });
+      const res = await axios.post(`${API_CONFIG.baseURL}/suggest-actions`, { text: summary });
       setSummarySuggestions(res.data.suggestions);
     } catch (err) {
       setSummarySuggestError('Failed to get suggestions.');
@@ -1116,7 +1122,7 @@ function TranscriptionPage() {
     setSuggestError('');
     setSuggestions('');
     try {
-      const res = await axios.post('/suggest-actions', { text: audioTranscript });
+      const res = await axios.post(`${API_CONFIG.baseURL}/suggest-actions`, { text: audioTranscript });
       setSuggestions(res.data.suggestions);
     } catch (err) {
       setSuggestError('Failed to get suggestions.');

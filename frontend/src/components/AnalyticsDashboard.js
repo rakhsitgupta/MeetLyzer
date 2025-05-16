@@ -14,7 +14,34 @@ function getAssigneeWorkloads(actionGroups) {
   return data;
 }
 
+function getMeetingFrequency() {
+  // Get meeting frequency from localStorage
+  const storedFrequency = localStorage.getItem('meetingFrequency');
+  if (storedFrequency) {
+    return JSON.parse(storedFrequency);
+  }
+  
+  // If no stored data, initialize with zeros
+  const initialFrequency = [0, 0, 0, 0, 0, 0, 0];
+  localStorage.setItem('meetingFrequency', JSON.stringify(initialFrequency));
+  return initialFrequency;
+}
+
+// Update meeting frequency when new summary is generated
+export function updateMeetingFrequency() {
+  const frequency = getMeetingFrequency();
+  const today = new Date().getDay(); // 0-6 for Sunday-Saturday
+  frequency[today]++;
+  localStorage.setItem('meetingFrequency', JSON.stringify(frequency));
+}
+
+// Get completion stats from localStorage
 function getCompletionStats(actionGroups) {
+  const storedStats = localStorage.getItem('completionStats');
+  if (storedStats) {
+    return JSON.parse(storedStats);
+  }
+  
   let completed = 0, total = 0;
   actionGroups.forEach(group => {
     group.tasks.forEach(task => {
@@ -24,13 +51,16 @@ function getCompletionStats(actionGroups) {
       }
     });
   });
-  return { completed, total };
+  
+  const stats = { completed, total };
+  localStorage.setItem('completionStats', JSON.stringify(stats));
+  return stats;
 }
 
-// Simulate meeting frequency (for demo, just use number of summaries generated)
-function getMeetingFrequency() {
-  // In a real app, this would come from backend or localStorage
-  return [5, 7, 4, 6, 8, 3, 9]; // Example: meetings per week
+// Update completion stats when task status changes
+export function updateCompletionStats(completed, total) {
+  const stats = { completed, total };
+  localStorage.setItem('completionStats', JSON.stringify(stats));
 }
 
 const AnalyticsDashboard = ({ actionGroups }) => {
