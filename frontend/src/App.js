@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
 import AutoResizeTextarea from './components/AutoResizeTextarea';
@@ -145,6 +145,7 @@ function getGoogleCalendarUrl(task, assignee) {
 }
 
 function DashboardPage({ onActionGroupsChange }) {
+  const navigate = useNavigate();
   const [overview, setOverview] = useState('');
   const [metrics, setMetrics] = useState('');
   const [decisions, setDecisions] = useState('');
@@ -599,6 +600,15 @@ Best regards,
     }
   };
 
+  const handleViewAnalytics = () => {
+    // Update analytics data before navigation
+    updateMeetingFrequency();
+    const stats = getCompletionStats(actionGroups);
+    updateCompletionStats(stats.completed, stats.total);
+    // Navigate to analytics page
+    navigate('/analytics');
+  };
+
   return (
     <>
       <div className="card">
@@ -808,6 +818,20 @@ Best regards,
               <span className="spinner"></span>
             ) : 'Generate Summary'}
           </motion.button>
+            <button
+              type="button"
+              className="submit-btn analytics-btn"
+              style={{ 
+                background: 'linear-gradient(45deg, #3b82f6, #8b5cf6)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+              onClick={handleViewAnalytics}
+            >
+              <span role="img" aria-label="analytics">📊</span>
+              View Analytics
+            </button>
             <button
               type="button"
               className="submit-btn email-btn"
