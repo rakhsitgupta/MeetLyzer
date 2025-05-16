@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Meetlyzer
 
 *AI-powered Meeting Summary & Action Manager*
