@@ -167,7 +167,7 @@ const AnalyticsDashboard = ({ actionGroups }) => {
       }).reverse();
 
       const meetingsPerDay = last7Days.map(date => 
-        frequency.filter(d => d.startsWith(date)).length
+        frequency.filter(d => String(d).startsWith(date)).length
       );
 
       setMeetingFrequencyData({
