@@ -1,149 +1,138 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import { Chart, BarElement, CategoryScale, LinearScale, ArcElement, Tooltip, Legend } from 'chart.js';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from 'chart.js';
 
-Chart.register(BarElement, CategoryScale, LinearScale, ArcElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement
+);
 
-function getAssigneeWorkloads(actionGroups) {
-  const data = {};
-  actionGroups.forEach(group => {
-    if (group.assignee) {
-      data[group.assignee] = (data[group.assignee] || 0) + group.tasks.length;
-    }
-  });
-  return data;
-}
-
-function getMeetingFrequency() {
-  // Get meeting frequency from localStorage
-  const storedFrequency = localStorage.getItem('meetingFrequency');
-  if (storedFrequency) {
-    return JSON.parse(storedFrequency);
-  }
-  
-  // If no stored data, initialize with zeros
-  const initialFrequency = [0, 0, 0, 0, 0, 0, 0];
-  localStorage.setItem('meetingFrequency', JSON.stringify(initialFrequency));
-  return initialFrequency;
-}
-
-// Update meeting frequency when new summary is generated
-export function updateMeetingFrequency() {
-  const frequency = getMeetingFrequency();
-  const today = new Date().getDay(); // 0-6 for Sunday-Saturday
-  frequency[today]++;
-  localStorage.setItem('meetingFrequency', JSON.stringify(frequency));
-}
-
-// Get completion stats from localStorage
 export const getCompletionStats = (actionGroups) => {
-  const storedStats = localStorage.getItem('completionStats');
-  if (storedStats) {
-    return JSON.parse(storedStats);
-  }
+  const stats = JSON.parse(localStorage.getItem('completionStats') || '{"completed": 0, "total": 0}');
+  const completed = actionGroups.reduce((acc, group) => 
+    acc + group.tasks.filter(task => task.completed).length, 0);
+  const total = actionGroups.reduce((acc, group) => 
+    acc + group.tasks.length, 0);
   
-  let completed = 0, total = 0;
-  actionGroups.forEach(group => {
-    group.tasks.forEach(task => {
-      if (task.task) {
-        total++;
-        if (task.completed) completed++;
-      }
-    });
-  });
-  
-  const stats = { completed, total };
+  stats.completed = completed;
+  stats.total = total;
   localStorage.setItem('completionStats', JSON.stringify(stats));
   return stats;
 };
 
-// Update completion stats when task status changes
-export function updateCompletionStats(completed, total) {
-  const stats = { completed, total };
+export const getAssigneeWorkload = (actionGroups) => {
+  const workloads = {};
+  actionGroups.forEach(group => {
+    if (!workloads[group.assignee]) {
+      workloads[group.assignee] = 0;
+    }
+    workloads[group.assignee] += group.tasks.length;
+  });
+  return workloads;
+};
+
+export const getMeetingFrequency = () => {
+  return JSON.parse(localStorage.getItem('meetingFrequency') || '[]');
+};
+
+export const updateMeetingFrequency = (date) => {
+  const frequency = getMeetingFrequency();
+  frequency.push(date);
+  localStorage.setItem('meetingFrequency', JSON.stringify(frequency));
+};
+
+export const updateCompletionStats = (actionGroups) => {
+  const stats = getCompletionStats(actionGroups);
   localStorage.setItem('completionStats', JSON.stringify(stats));
-}
+};
 
 const AnalyticsDashboard = ({ actionGroups }) => {
-  const workloads = getAssigneeWorkloads(actionGroups);
-  const completion = getCompletionStats(actionGroups);
-  const meetingFrequency = getMeetingFrequency();
+  const [workloadData, setWorkloadData] = useState({
+    labels: [],
+    datasets: [{
+      label: 'Tasks per Assignee',
+      data: [],
+      backgroundColor: 'rgba(54, 162, 235, 0.5)',
+      borderColor: 'rgba(54, 162, 235, 1)',
+      borderWidth: 1,
+    }],
+  });
+
+  const [completionData, setCompletionData] = useState({
+    labels: ['Completed', 'Pending'],
+    datasets: [{
+      data: [0, 0],
+      backgroundColor: [
+        'rgba(75, 192, 192, 0.5)',
+        'rgba(255, 99, 132, 0.5)',
+      ],
+      borderColor: [
+        'rgba(75, 192, 192, 1)',
+        'rgba(255, 99, 132, 1)',
+      ],
+      borderWidth: 1,
+    }],
+  });
+
+  useEffect(() => {
+    if (actionGroups && actionGroups.length > 0) {
+      const workloads = getAssigneeWorkload(actionGroups);
+      setWorkloadData({
+        labels: Object.keys(workloads),
+        datasets: [{
+          label: 'Tasks per Assignee',
+          data: Object.values(workloads),
+          backgroundColor: 'rgba(54, 162, 235, 0.5)',
+          borderColor: 'rgba(54, 162, 235, 1)',
+          borderWidth: 1,
+        }],
+      });
+
+      const stats = getCompletionStats(actionGroups);
+      setCompletionData({
+        labels: ['Completed', 'Pending'],
+        datasets: [{
+          data: [stats.completed, stats.total - stats.completed],
+          backgroundColor: [
+            'rgba(75, 192, 192, 0.5)',
+            'rgba(255, 99, 132, 0.5)',
+          ],
+          borderColor: [
+            'rgba(75, 192, 192, 1)',
+            'rgba(255, 99, 132, 1)',
+          ],
+          borderWidth: 1,
+        }],
+      });
+    }
+  }, [actionGroups]);
 
   return (
-    <div style={{ maxWidth: 1200, margin: '2rem auto 0 auto', display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'center' }}>
-      {/* Assignee Workloads */}
-      <div style={{ background: 'rgba(30,41,59,0.7)', borderRadius: 12, padding: '1.5rem', minWidth: 280, maxWidth: 340, flex: 1 }}>
-        <h3 style={{ color: '#e2e8f0', marginBottom: '1rem', fontWeight: 600 }}>Assignee Workloads</h3>
-        <Bar
-          data={{
-            labels: Object.keys(workloads),
-            datasets: [{
-              label: 'Tasks Assigned',
-              data: Object.values(workloads),
-              backgroundColor: '#60a5fa',
-              borderRadius: 8,
-              barThickness: 28,
-            }],
-          }}
-          options={{
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: '#e2e8f0', font: { weight: 600 } }, title: { display: true, text: 'Assignees', color: '#a3aed6', font: { weight: 600 } } },
-              y: { beginAtZero: true, grid: { color: 'rgba(163, 174, 214, 0.1)' }, ticks: { color: '#a3aed6' }, title: { display: true, text: 'Tasks', color: '#a3aed6', font: { weight: 600 } } },
-            },
-          }}
-          height={180}
-        />
-      </div>
-      {/* Completion Rate */}
-      <div style={{ background: 'rgba(30,41,59,0.7)', borderRadius: 12, padding: '1.5rem', minWidth: 280, maxWidth: 340, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <h3 style={{ color: '#e2e8f0', marginBottom: '1rem', fontWeight: 600 }}>Action Item Completion</h3>
-        <Doughnut
-          data={{
-            labels: ['Completed', 'Incomplete'],
-            datasets: [{
-              data: [completion.completed, Math.max(0, completion.total - completion.completed)],
-              backgroundColor: ['#34d399', '#f87171'],
-              borderWidth: 2,
-            }],
-          }}
-          options={{
-            plugins: { legend: { labels: { color: '#e2e8f0', font: { weight: 600 } } } },
-            cutout: '70%',
-          }}
-          height={180}
-        />
-        <div style={{ color: '#a3aed6', marginTop: '1.2rem', fontWeight: 600, fontSize: '1.1rem' }}>
-          {completion.total === 0 ? 'No tasks' : `${completion.completed} / ${completion.total} completed`}
+    <div className="analytics-dashboard">
+      <h2>Analytics Dashboard</h2>
+      <div className="charts-container">
+        <div className="chart">
+          <h3>Assignee Workload</h3>
+          <Bar data={workloadData} />
         </div>
-      </div>
-      {/* Meeting Frequency (simulated) */}
-      <div style={{ background: 'rgba(30,41,59,0.7)', borderRadius: 12, padding: '1.5rem', minWidth: 280, maxWidth: 340, flex: 1 }}>
-        <h3 style={{ color: '#e2e8f0', marginBottom: '1rem', fontWeight: 600 }}>Meeting Frequency (Demo)</h3>
-        <div style={{ color: '#a3aed6', fontSize: '0.98rem', marginBottom: '0.5rem' }}>
-          This bar graph shows the number of meetings held each day of the week (simulated data).
+        <div className="chart">
+          <h3>Action Item Completion</h3>
+          <Doughnut data={completionData} />
         </div>
-        <Bar
-          data={{
-            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-            datasets: [{
-              label: 'Meetings',
-              data: meetingFrequency,
-              backgroundColor: '#a78bfa',
-              borderRadius: 8,
-              barThickness: 28,
-            }],
-          }}
-          options={{
-            responsive: true,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { grid: { display: false }, ticks: { color: '#e2e8f0', font: { weight: 600 } }, title: { display: true, text: 'Day of Week', color: '#a3aed6', font: { weight: 600 } } },
-              y: { beginAtZero: true, grid: { color: 'rgba(163, 174, 214, 0.1)' }, ticks: { color: '#a3aed6' }, title: { display: true, text: 'Meetings', color: '#a3aed6', font: { weight: 600 } } },
-            },
-          }}
-          height={180}
-        />
       </div>
     </div>
   );

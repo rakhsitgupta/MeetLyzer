@@ -4,9 +4,10 @@ const API_CONFIG = {
   timeout: parseInt(process.env.REACT_APP_API_TIMEOUT) || 30000,
   maxRetries: parseInt(process.env.REACT_APP_API_MAX_RETRIES) || 3,
   endpoints: {
-    generateSummary: '/generate-summary',
-    transcribe: '/transcribe',
-    suggestActions: '/suggest-actions'
+    generateSummary: '/api/generate-summary',
+    transcribe: '/api/transcribe',
+    suggestActions: '/api/suggestions',
+    suggestSummary: '/api/suggestions/summary'
   }
 };
 

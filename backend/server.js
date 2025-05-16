@@ -78,7 +78,7 @@ const errorHandler = (err, req, res, next) => {
 };
 
 // Health check endpoint with more details
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   try {
     res.status(200).json({ 
       status: 'healthy',
@@ -101,10 +101,11 @@ app.get('/', (req, res) => {
       version: '1.0.0',
       environment: process.env.NODE_ENV,
       endpoints: {
-        health: '/health',
-        generateSummary: '/generate-summary',
-        transcribe: '/transcribe',
-        suggestActions: '/suggest-actions'
+        health: '/api/health',
+        generateSummary: '/api/generate-summary',
+        transcribe: '/api/transcribe',
+        suggestActions: '/api/suggestions',
+        suggestSummary: '/api/suggestions/summary'
       }
     });
   } catch (error) {
@@ -113,7 +114,7 @@ app.get('/', (req, res) => {
 });
 
 // Generate summary endpoint
-app.post('/generate-summary', async (req, res) => {
+app.post('/api/generate-summary', async (req, res) => {
   try {
     const { overview, metrics, decisions, actionItems, nextMeeting } = req.body;
 
@@ -163,7 +164,7 @@ Attendees: ${nextMeeting?.attendees || 'Not specified'}
 });
 
 // Transcription endpoint for AssemblyAI
-app.post('/transcribe', upload.single('file'), async (req, res) => {
+app.post('/api/transcribe', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
     const apiKey = process.env.ASSEMBLY_API_KEY;
@@ -217,7 +218,7 @@ app.post('/transcribe', upload.single('file'), async (req, res) => {
 });
 
 // Suggest action items endpoint
-app.post('/suggest-actions', async (req, res) => {
+app.post('/api/suggestions', async (req, res) => {
   try {
     const { text } = req.body;
     if (!text) return res.status(400).json({ error: 'No text provided' });
@@ -257,6 +258,28 @@ ${text.nextMeeting ? text.nextMeeting.join('\n') : 'Not specified'}
     res.json({ suggestions });
   } catch (error) {
     console.error('Suggest actions error:', error);
+    res.status(500).json({ error: 'Failed to generate suggestions' });
+  }
+});
+
+// Suggest summary endpoint
+app.post('/api/suggestions/summary', async (req, res) => {
+  try {
+    const { overview, metrics } = req.body;
+    if (!overview && !metrics) return res.status(400).json({ error: 'No content provided' });
+
+    const prompt = `Based on the following meeting content, suggest improvements or additional points to consider:\n\nOverview:\n${overview || 'Not specified'}\n\nMetrics:\n${metrics || 'Not specified'}\n\nSuggestions:`;
+    
+    const response = await cohere.generate({
+      model: 'command',
+      prompt,
+      max_tokens: 150,
+      temperature: 0.5,
+    });
+    const suggestions = response.generations[0].text.trim();
+    res.json({ overview, metrics, suggestions });
+  } catch (error) {
+    console.error('Suggest summary error:', error);
     res.status(500).json({ error: 'Failed to generate suggestions' });
   }
 });

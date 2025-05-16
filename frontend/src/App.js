@@ -144,13 +144,11 @@ function getGoogleCalendarUrl(task, assignee) {
   return url;
 }
 
-function DashboardPage() {
+function DashboardPage({ onActionGroupsChange }) {
   const [overview, setOverview] = useState('');
   const [metrics, setMetrics] = useState('');
   const [decisions, setDecisions] = useState('');
-  const [actionGroups, setActionGroups] = useState([
-    { assignee: '', tasks: [{ id: Date.now(), task: '', deadline: '', priority: '', dependencies: '', completed: false }] }
-  ]);
+  const [actionGroups, setActionGroups] = useState([]);
   const [nextMeeting, setNextMeeting] = useState({ date: '', time: '', location: '', agenda: '', attendees: '' });
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -177,6 +175,10 @@ function DashboardPage() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    onActionGroupsChange(actionGroups);
+  }, [actionGroups, onActionGroupsChange]);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
@@ -544,16 +546,56 @@ Best regards,
   };
 
   const handleGetSummarySuggestions = async () => {
-    setSummarySuggestLoading(true);
-    setSummarySuggestError('');
-    setSummarySuggestions('');
     try {
-      const res = await axios.post(`${API_CONFIG.baseURL}/suggest-actions`, { text: summary });
-      setSummarySuggestions(res.data.suggestions);
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch(`${API_CONFIG.baseURL}${API_CONFIG.endpoints.suggestSummary}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ overview, metrics }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get suggestions');
+      }
+
+      const data = await response.json();
+      setOverview(data.overview);
+      setMetrics(data.metrics);
     } catch (err) {
-      setSummarySuggestError('Failed to get suggestions.');
+      setError(err.message);
+      console.error('Error getting suggestions:', err);
+    } finally {
+      setIsLoading(false);
     }
-    setSummarySuggestLoading(false);
+  };
+
+  const handleGetSuggestions = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const response = await fetch(`${API_CONFIG.baseURL}${API_CONFIG.endpoints.suggestActions}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ overview, metrics }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get suggestions');
+      }
+
+      const data = await response.json();
+      setActionGroups(data.actionGroups);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error getting suggestions:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -913,9 +955,9 @@ Best regards,
                   className="submit-btn"
                   style={{ marginTop: 24, fontSize: '1rem' }}
                   onClick={handleGetSummarySuggestions}
-                  disabled={summarySuggestLoading || !summary}
+                  disabled={loading || !summary}
                 >
-                  {summarySuggestLoading ? 'Getting Suggestions...' : 'Get Suggestions'}
+                  {loading ? 'Getting Suggestions...' : 'Get Suggestions'}
                 </button>
                 {summarySuggestError && <div style={{ color: '#ef4444', marginTop: 12 }}>{summarySuggestError}</div>}
                 {summarySuggestions && (
@@ -1123,10 +1165,11 @@ function TranscriptionPage() {
     setSuggestError('');
     setSuggestions('');
     try {
-      const res = await axios.post(`${API_CONFIG.baseURL}/suggest-actions`, { text: audioTranscript });
+      const res = await axios.post(`${API_CONFIG.baseURL}${API_CONFIG.endpoints.suggestActions}`, { text: audioTranscript });
       setSuggestions(res.data.suggestions);
     } catch (err) {
-      setSuggestError('Failed to get suggestions.');
+      console.error('Error getting suggestions:', err);
+      setSuggestError('Failed to get suggestions. Please try again.');
     }
     setSuggestLoading(false);
   };
@@ -1198,10 +1241,13 @@ function TranscriptionPage() {
 
 function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'dark');
+  const [actionGroups, setActionGroups] = useState([]);
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
   };
@@ -1218,8 +1264,8 @@ function App() {
           </nav>
         </header>
         <Routes>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/analytics" element={<AnalyticsDashboard actionGroups={[]} />} />
+          <Route path="/" element={<DashboardPage onActionGroupsChange={setActionGroups} />} />
+          <Route path="/analytics" element={<AnalyticsDashboard actionGroups={actionGroups} />} />
           <Route path="/transcription" element={<TranscriptionPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
