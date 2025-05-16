@@ -602,7 +602,7 @@ Best regards,
 
   const handleViewAnalytics = () => {
     // Update analytics data before navigation
-    updateMeetingFrequency();
+    updateMeetingFrequency(new Date().toISOString().split('T')[0]);
     const stats = getCompletionStats(actionGroups);
     updateCompletionStats(actionGroups);
     // Navigate to analytics page
