@@ -137,7 +137,7 @@ meetlyzer/
   - Framer Motion
   - CSS3
 
-## Screenshots
+## Live Demo
 
-*(Add screenshots of the main UI, summary modal, email modal, and analytics for best results!)* 
+https://meetlyzer-2.onrender.com/
 =======
