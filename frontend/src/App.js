@@ -337,7 +337,7 @@ function DashboardPage({ onActionGroupsChange }) {
     // Update analytics
     updateMeetingFrequency();
     const stats = getCompletionStats(actionGroups);
-    updateCompletionStats(stats.completed, stats.total);
+    updateCompletionStats(actionGroups);
   };
 
   // Generate email templates
@@ -604,7 +604,7 @@ Best regards,
     // Update analytics data before navigation
     updateMeetingFrequency();
     const stats = getCompletionStats(actionGroups);
-    updateCompletionStats(stats.completed, stats.total);
+    updateCompletionStats(actionGroups);
     // Navigate to analytics page
     navigate('/analytics');
   };
