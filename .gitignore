@@ -1,0 +1,20 @@
+# Node dependencies
+node_modules/
+frontend/node_modules/
+backend/node_modules/
+
+# Build and cache
+.cache/
+frontend/.cache/
+backend/.cache/
+
+# Environment and sensitive files
+.env
+uploads/
+
+# Logs
+*.log
+
+# OS junk
+.DS_Store
+Thumbs.db 
