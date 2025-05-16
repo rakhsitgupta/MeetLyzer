@@ -36,7 +36,7 @@ export function updateMeetingFrequency() {
 }
 
 // Get completion stats from localStorage
-function getCompletionStats(actionGroups) {
+export const getCompletionStats = (actionGroups) => {
   const storedStats = localStorage.getItem('completionStats');
   if (storedStats) {
     return JSON.parse(storedStats);
@@ -55,7 +55,7 @@ function getCompletionStats(actionGroups) {
   const stats = { completed, total };
   localStorage.setItem('completionStats', JSON.stringify(stats));
   return stats;
-}
+};
 
 // Update completion stats when task status changes
 export function updateCompletionStats(completed, total) {
