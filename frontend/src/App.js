@@ -10,7 +10,8 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import html2canvas from 'html2canvas';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
-import { updateMeetingFrequency, updateCompletionStats } from './components/AnalyticsDashboard';
+import { updateMeetingFrequency, updateCompletionStats, getCompletionStats } from './components/AnalyticsDashboard';
+import { API_CONFIG } from './config/api';
 
 const emptyActionItem = { task: '', assignee: '', deadline: '', priority: '', dependencies: '' };
 
