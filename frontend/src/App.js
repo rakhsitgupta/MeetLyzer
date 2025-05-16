@@ -152,6 +152,7 @@ function DashboardPage({ onActionGroupsChange }) {
   const [nextMeeting, setNextMeeting] = useState({ date: '', time: '', location: '', agenda: '', attendees: '' });
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [collapse, setCollapse] = useState({
@@ -170,7 +171,6 @@ function DashboardPage({ onActionGroupsChange }) {
   const [summarySuggestions, setSummarySuggestions] = useState('');
   const [summarySuggestLoading, setSummarySuggestLoading] = useState(false);
   const [summarySuggestError, setSummarySuggestError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
