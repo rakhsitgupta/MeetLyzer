@@ -20,7 +20,7 @@ const port = process.env.PORT || 5000;
 
 // Initialize Cohere with environment variable
 const cohere = new CohereClient({ 
-  apiKey: process.env.COHERE_API_KEY 
+  apiKey: process.env.CO_API_KEY 
 });
 
 // Security middleware
@@ -166,7 +166,7 @@ Attendees: ${nextMeeting?.attendees || 'Not specified'}
 app.post('/transcribe', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const apiKey = process.env.ASSEMBLYAI_API_KEY;
+    const apiKey = process.env.ASSEMBLY_API_KEY;
     if (!apiKey) return res.status(500).json({ error: 'AssemblyAI API key not set' });
 
     // 1. Upload file to AssemblyAI
