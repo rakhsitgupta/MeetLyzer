@@ -6,18 +6,111 @@ const { CohereClient } = require('cohere-ai');
 const multer = require('multer');
 const fs = require('fs');
 const axios = require('axios');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const validateEnv = require('./config/env');
+const logger = require('./config/logger');
+
+// Validate environment variables
+validateEnv();
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Initialize Cohere
-const cohere = new CohereClient({ apiKey: process.env.COHERE_API_KEY });
+// Initialize Cohere with environment variable
+const cohere = new CohereClient({ 
+  apiKey: process.env.COHERE_API_KEY 
+});
 
-// Middleware
-app.use(cors());
-app.use(bodyParser.json());
+// Security middleware
+app.use(helmet());
+app.use(compression());
 
-const upload = multer({ dest: 'uploads/' });
+// Rate limiting with environment variables
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000,
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 100
+});
+app.use(limiter);
+
+// CORS configuration with environment variable
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  methods: ['GET', 'POST'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Body parsing middleware with size limits from env
+app.use(bodyParser.json({ 
+  limit: process.env.MAX_BODY_SIZE || '10mb' 
+}));
+app.use(bodyParser.urlencoded({ 
+  extended: true, 
+  limit: process.env.MAX_BODY_SIZE || '10mb' 
+}));
+
+// Configure multer with environment variables
+const upload = multer({ 
+  dest: process.env.UPLOAD_DIR || 'uploads/',
+  limits: {
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 10485760 // 10MB default
+  }
+});
+
+// Error handling middleware
+const errorHandler = (err, req, res, next) => {
+  logger.error('Error:', {
+    message: err.message,
+    stack: err.stack,
+    path: req.path,
+    method: req.method
+  });
+  
+  // Send appropriate error response
+  res.status(err.status || 500).json({
+    error: process.env.NODE_ENV === 'production' 
+      ? 'An unexpected error occurred' 
+      : err.message,
+    path: req.path,
+    timestamp: new Date().toISOString()
+  });
+};
+
+// Health check endpoint with more details
+app.get('/health', (req, res) => {
+  try {
+    res.status(200).json({ 
+      status: 'healthy',
+      environment: process.env.NODE_ENV,
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Add this before other routes
+app.get('/', (req, res) => {
+  try {
+    res.json({ 
+      message: 'Meeting Summary API is running',
+      status: 'active',
+      version: '1.0.0',
+      environment: process.env.NODE_ENV,
+      endpoints: {
+        health: '/health',
+        generateSummary: '/generate-summary',
+        transcribe: '/transcribe',
+        suggestActions: '/suggest-actions'
+      }
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // Generate summary endpoint
 app.post('/generate-summary', async (req, res) => {
@@ -168,6 +261,11 @@ ${text.nextMeeting ? text.nextMeeting.join('\n') : 'Not specified'}
   }
 });
 
-app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+// Apply error handling middleware
+app.use(errorHandler);
+
+// Start server with proper host binding
+app.listen(port, '0.0.0.0', () => {
+  logger.info(`Server is running on port ${port} in ${process.env.NODE_ENV} mode`);
+  logger.info(`CORS enabled for origin: ${process.env.CORS_ORIGIN}`);
 }); 
