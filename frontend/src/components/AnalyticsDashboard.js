@@ -92,10 +92,10 @@ const AnalyticsDashboard = ({ actionGroups }) => {
     if (actionGroups && actionGroups.length > 0) {
       const workloads = getAssigneeWorkload(actionGroups);
       setWorkloadData({
-        labels: Object.keys(workloads),
-        datasets: [{
+            labels: Object.keys(workloads),
+            datasets: [{
           label: 'Tasks per Assignee',
-          data: Object.values(workloads),
+              data: Object.values(workloads),
           backgroundColor: 'rgba(54, 162, 235, 0.5)',
           borderColor: 'rgba(54, 162, 235, 1)',
           borderWidth: 1,
@@ -105,7 +105,7 @@ const AnalyticsDashboard = ({ actionGroups }) => {
       const stats = getCompletionStats(actionGroups);
       setCompletionData({
         labels: ['Completed', 'Pending'],
-        datasets: [{
+            datasets: [{
           data: [stats.completed, stats.total - stats.completed],
           backgroundColor: [
             'rgba(75, 192, 192, 0.5)',

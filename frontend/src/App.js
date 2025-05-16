@@ -170,6 +170,7 @@ function DashboardPage({ onActionGroupsChange }) {
   const [summarySuggestions, setSummarySuggestions] = useState('');
   const [summarySuggestLoading, setSummarySuggestLoading] = useState(false);
   const [summarySuggestError, setSummarySuggestError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
